@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ricardo Tattoo - Stencil Pro</title>
+
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+<style>
+body{
+background:#000;
+color:#fff;
+font-family:-apple-system,Segoe UI;
+padding:20px;
+text-align:center;
+}
+
+h1{
+font-size:24px;
+letter-spacing:2px;
+margin-bottom:5px;
+}
+
+h2{
+font-size:12px;
+color:#888;
+margin-bottom:20px;
+}
+
+input,button{
+margin:10px 0;
+padding:12px;
+border-radius:8px;
+border:none;
+width:100%;
+max-width:400px;
+}
+
+button{
+background:#111;
+color:#fff;
+border:1px solid #444;
+font-weight:bold;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+background:#222;
+}
+
+canvas{
+margin-top:20px;
+max-width:100%;
+background:#fff;
+border-radius:8px;
+}
+
+.slider{
+width:100%;
+max-width:400px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>RICARDO TATTOO</h1>
+<h2>Stencil Pro — Dark Premium</h2>
+
+<input type="file" id="upload" accept="image/*">
+
+<p>Detalhe da Linha</p>
+<input type="range" id="edge" min="20" max="150" value="60" class="slider">
+
+<p>Intensidade da Sombra</p>
+<input type="range" id="shadow" min="0" max="100" value="40" class="slider">
+
+<br>
+<button onclick="generateStencil()">Gerar Stencil Profissional</button>
+<button onclick="saveProject()">Salvar Projeto</button>
+<button onclick="downloadImage()">Exportar PNG Alta Qualidade</button>
+
+<br>
+<canvas id="canvasOutput"></canvas>
+
+<script>
+let canvas=document.getElementById('canvasOutput');
+let imgDataURL=null;
+
+document.getElementById('upload').addEventListener('change',function(e){
+let reader=new FileReader();
+reader.onload=function(event){
+imgDataURL=event.target.result;
+let img=new Image();
+img.onload=function(){
+canvas.width=img.width;
+canvas.height=img.height;
+let ctx=canvas.getContext('2d');
+ctx.drawImage(img,0,0);
+};
+img.src=imgDataURL;
+};
+reader.readAsDataURL(e.target.files[0]);
+});
+
+function generateStencil(){
+let src=cv.imread(canvas);
+let gray=new cv.Mat();
+cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+
+let edges=new cv.Mat();
+let edgeValue=document.getElementById("edge").value;
+cv.Canny(gray,edges,edgeValue,edgeValue*2);
+
+let shadowLevel=document.getElementById("shadow").value;
+
+for(let i=0;i<gray.data.length;i++){
+gray.data[i]=gray.data[i]*(shadowLevel/100);
+}
+
+let combined=new cv.Mat();
+cv.addWeighted(edges,1,gray,1,0,combined);
+
+cv.imshow('canvasOutput',combined);
+
+src.delete(); gray.delete(); edges.delete(); combined.delete();
+}
+
+function downloadImage(){
+let link=document.createElement("a");
+link.download="ricardo-tattoo-stencil.png";
+link.href=canvas.toDataURL("image/png");
+link.click();
+}
+
+function saveProject(){
+if(!imgDataURL) return alert("Nenhuma imagem carregada.");
+localStorage.setItem("ricardoTattooProject",imgDataURL);
+alert("Projeto salvo no dispositivo.");
+}
+
+window.onload=function(){
+let saved=localStorage.getItem("ricardoTattooProject");
+if(saved){
+let img=new Image();
+img.onload=function(){
+canvas.width=img.width;
+canvas.height=img.height;
+canvas.getContext('2d').drawImage(img,0,0);
+};
+img.src=saved;
+}
+}
+</script>
+
+</body>
+</html>
